@@ -6,23 +6,22 @@ import android.net.ConnectivityManager
 import android.net.ConnectivityManager.*
 import android.net.NetworkCapabilities.*
 import android.os.Build
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.expandablerecyclerviewwithpaging.NewsApplication
-import com.example.expandablerecyclerviewwithpaging.api.RetrofitInstance
+import com.example.expandablerecyclerviewwithpaging.models.Article
 import com.example.expandablerecyclerviewwithpaging.models.Source
 import com.example.expandablerecyclerviewwithpaging.models.SourcesResponse
+import com.example.expandablerecyclerviewwithpaging.models.TopHeadlinesResponse
 import com.example.expandablerecyclerviewwithpaging.repository.NewsRepository
-import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.NEWS_CATEGORY
+import com.example.expandablerecyclerviewwithpaging.util.MyCallBackInterface
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.NEWS_LANGUAGE
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.STATUS_OK
 import com.example.expandablerecyclerviewwithpaging.util.Resource
 import kotlinx.coroutines.launch
 import okio.IOException
 import retrofit2.Response
-import java.lang.Exception
 
 class NewsViewModel(
     app: Application,
@@ -31,6 +30,9 @@ class NewsViewModel(
 
     val newsSources: MutableLiveData<Resource<SourcesResponse>> = MutableLiveData()
     val newsSourcesList: MutableList<Source> = mutableListOf<Source>()
+
+    val topHeadlineArticles: MutableLiveData<Resource<TopHeadlinesResponse>> = MutableLiveData()
+    val topHeadlineArticlesList: MutableList<Article> = mutableListOf<Article>()
 
     init {
         getNewsSources(NEWS_LANGUAGE)
@@ -62,6 +64,39 @@ class NewsViewModel(
             response.body()?.let {
                 if (it.status == STATUS_OK) {
                     newsSourcesList.addAll(it.sources)
+                    return Resource.Success(it)
+                }
+            }
+        }
+        return Resource.Error(response.message())
+    }
+
+    fun getTopHeadlineArticles(source: String, pageNumber: Int) = viewModelScope.launch {
+        safeTopHeadlinesArticlesCall(source, pageNumber)
+    }
+
+    private suspend fun safeTopHeadlinesArticlesCall(source: String, pageNumber: Int) {
+        topHeadlineArticles.postValue(Resource.Loading())
+        try {
+            if (hasInternetConnection()) {
+                val response = newsRepository.getTopHeadlines(source, pageNumber)
+                topHeadlineArticles.postValue(handleTopHeadlinesArticlesResponse(response))
+            } else {
+                topHeadlineArticles.postValue(Resource.Error("No internet connection"))
+            }
+        } catch (t: Throwable) {
+            when (t) {
+                is IOException -> topHeadlineArticles.postValue(Resource.Error("Network Failure"))
+                else -> topHeadlineArticles.postValue(Resource.Error("Conversion Error"))
+            }
+        }
+    }
+
+    private fun handleTopHeadlinesArticlesResponse(response: Response<TopHeadlinesResponse>): Resource<TopHeadlinesResponse>? {
+        if (response.isSuccessful) {
+            response.body()?.let {
+                if (it.status == STATUS_OK) {
+                    topHeadlineArticlesList.addAll(it.articles)
                     return Resource.Success(it)
                 }
             }

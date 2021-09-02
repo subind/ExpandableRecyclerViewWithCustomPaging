@@ -6,10 +6,12 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.expandablerecyclerviewwithpaging.R
 import com.example.expandablerecyclerviewwithpaging.models.Source
+import com.example.expandablerecyclerviewwithpaging.util.MyCallBackInterface
 import kotlinx.android.synthetic.main.header_row.view.*
 
 class NewsAdapter(val newsSourcesList: MutableList<Source>): RecyclerView.Adapter<NewsAdapter.NewsViewHolder>() {
 
+    var myCallBackInterface: MyCallBackInterface? = null
     inner class NewsViewHolder(itemView: View): RecyclerView.ViewHolder(itemView)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NewsViewHolder {
@@ -24,8 +26,15 @@ class NewsAdapter(val newsSourcesList: MutableList<Source>): RecyclerView.Adapte
 
         (holder as NewsViewHolder).itemView.apply {
             tv_header.text = row.name
+            iv_expand?.setOnClickListener {
+                myCallBackInterface?.callBackMethod(row.id, 1)
+            }
         }
     }
 
     override fun getItemCount(): Int = newsSourcesList.size
+
+    fun setCallBackInterface(myCallBackInterface: MyCallBackInterface){
+        this.myCallBackInterface = myCallBackInterface
+    }
 }

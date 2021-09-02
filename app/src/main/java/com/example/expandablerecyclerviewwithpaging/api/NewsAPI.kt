@@ -29,7 +29,7 @@ interface NewsAPI {
         @Query("pageSize")
         pageSize: Int = 20,
         @Query("page")
-        pageNumber: Int = 1
+        pageNumber: Int
     ): Response<TopHeadlinesResponse>
 
 }

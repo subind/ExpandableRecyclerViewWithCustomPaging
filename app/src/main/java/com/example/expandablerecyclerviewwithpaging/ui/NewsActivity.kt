@@ -10,11 +10,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.expandablerecyclerviewwithpaging.R
 import com.example.expandablerecyclerviewwithpaging.adapter.NewsAdapter
 import com.example.expandablerecyclerviewwithpaging.repository.NewsRepository
+import com.example.expandablerecyclerviewwithpaging.util.MyCallBackInterface
 import com.example.expandablerecyclerviewwithpaging.util.Resource
 import kotlinx.android.synthetic.main.activity_news.*
 import kotlinx.android.synthetic.main.item_error_message.*
 
-class NewsActivity : AppCompatActivity() {
+class NewsActivity : AppCompatActivity(), MyCallBackInterface {
 
     lateinit var viewModel: NewsViewModel
     lateinit var newsAdapter: NewsAdapter
@@ -75,10 +76,17 @@ class NewsActivity : AppCompatActivity() {
 
     private fun setUpRecyclerView() {
         newsAdapter = NewsAdapter(viewModel.newsSourcesList)
-        news_rv.apply {
-            adapter = newsAdapter
-            layoutManager = LinearLayoutManager(this@NewsActivity)
+        newsAdapter?.let {
+            it.setCallBackInterface(this)
+            news_rv.apply {
+                adapter = it
+                layoutManager = LinearLayoutManager(this@NewsActivity)
+            }
         }
+    }
+
+    override fun callBackMethod(sourceId: String, pageNumber: Int) {
+        viewModel.getTopHeadlineArticles(sourceId, pageNumber)
     }
 
 }
