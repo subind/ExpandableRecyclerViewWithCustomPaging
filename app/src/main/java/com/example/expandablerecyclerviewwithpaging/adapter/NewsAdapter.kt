@@ -37,4 +37,9 @@ class NewsAdapter(val newsSourcesList: MutableList<Source>): RecyclerView.Adapte
     fun setCallBackInterface(myCallBackInterface: MyCallBackInterface){
         this.myCallBackInterface = myCallBackInterface
     }
+
+    //TODO
+//    fun refreshList(newListContents: MutableList<Article>, rowToBeInsertedAt: Int){
+//
+//    }
 }

@@ -10,12 +10,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.expandablerecyclerviewwithpaging.NewsApplication
-import com.example.expandablerecyclerviewwithpaging.models.Article
-import com.example.expandablerecyclerviewwithpaging.models.Source
 import com.example.expandablerecyclerviewwithpaging.models.SourcesResponse
 import com.example.expandablerecyclerviewwithpaging.models.TopHeadlinesResponse
 import com.example.expandablerecyclerviewwithpaging.repository.NewsRepository
-import com.example.expandablerecyclerviewwithpaging.util.MyCallBackInterface
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.NEWS_LANGUAGE
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.STATUS_OK
 import com.example.expandablerecyclerviewwithpaging.util.Resource
@@ -29,10 +26,12 @@ class NewsViewModel(
 ) : AndroidViewModel(app) {
 
     val newsSources: MutableLiveData<Resource<SourcesResponse>> = MutableLiveData()
-    val newsSourcesList: MutableList<Source> = mutableListOf<Source>()
 
-    val topHeadlineArticles: MutableLiveData<Resource<TopHeadlinesResponse>> = MutableLiveData()
-    val topHeadlineArticlesList: MutableList<Article> = mutableListOf<Article>()
+    val topHeadlines: MutableLiveData<Resource<TopHeadlinesResponse>> = MutableLiveData()
+
+    var rowPositionTracker: Int = -1
+    var sourceIdTracker: String? = null
+    var topHeadlinesPageNumber = 1
 
     init {
         getNewsSources(NEWS_LANGUAGE)
@@ -63,7 +62,6 @@ class NewsViewModel(
         if (response.isSuccessful) {
             response.body()?.let {
                 if (it.status == STATUS_OK) {
-                    newsSourcesList.addAll(it.sources)
                     return Resource.Success(it)
                 }
             }
@@ -71,23 +69,23 @@ class NewsViewModel(
         return Resource.Error(response.message())
     }
 
-    fun getTopHeadlineArticles(source: String, pageNumber: Int) = viewModelScope.launch {
-        safeTopHeadlinesArticlesCall(source, pageNumber)
+    fun getTopHeadlineArticles(source: String) = viewModelScope.launch {
+        safeTopHeadlinesArticlesCall(source)
     }
 
-    private suspend fun safeTopHeadlinesArticlesCall(source: String, pageNumber: Int) {
-        topHeadlineArticles.postValue(Resource.Loading())
+    private suspend fun safeTopHeadlinesArticlesCall(source: String) {
+        topHeadlines.postValue(Resource.Loading())
         try {
             if (hasInternetConnection()) {
-                val response = newsRepository.getTopHeadlines(source, pageNumber)
-                topHeadlineArticles.postValue(handleTopHeadlinesArticlesResponse(response))
+                val response = newsRepository.getTopHeadlines(source, topHeadlinesPageNumber)
+                topHeadlines.postValue(handleTopHeadlinesArticlesResponse(response))
             } else {
-                topHeadlineArticles.postValue(Resource.Error("No internet connection"))
+                topHeadlines.postValue(Resource.Error("No internet connection"))
             }
         } catch (t: Throwable) {
             when (t) {
-                is IOException -> topHeadlineArticles.postValue(Resource.Error("Network Failure"))
-                else -> topHeadlineArticles.postValue(Resource.Error("Conversion Error"))
+                is IOException -> topHeadlines.postValue(Resource.Error("Network Failure"))
+                else -> topHeadlines.postValue(Resource.Error("Conversion Error"))
             }
         }
     }
@@ -95,8 +93,8 @@ class NewsViewModel(
     private fun handleTopHeadlinesArticlesResponse(response: Response<TopHeadlinesResponse>): Resource<TopHeadlinesResponse>? {
         if (response.isSuccessful) {
             response.body()?.let {
+                topHeadlinesPageNumber++
                 if (it.status == STATUS_OK) {
-                    topHeadlineArticlesList.addAll(it.articles)
                     return Resource.Success(it)
                 }
             }
