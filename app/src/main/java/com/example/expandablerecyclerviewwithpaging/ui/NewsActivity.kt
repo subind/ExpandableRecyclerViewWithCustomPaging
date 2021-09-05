@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.expandablerecyclerviewwithpaging.R
 import com.example.expandablerecyclerviewwithpaging.adapter.NewsAdapter
+import com.example.expandablerecyclerviewwithpaging.models.ExpandCollapseModel
 import com.example.expandablerecyclerviewwithpaging.models.Source
 import com.example.expandablerecyclerviewwithpaging.repository.NewsRepository
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.QUERY_PAGE_SIZE
@@ -36,14 +37,14 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
         val viewModelProviderFactory = NewsViewModelProviderFactory(application, newsRepository)
         viewModel = ViewModelProvider(this, viewModelProviderFactory).get(NewsViewModel::class.java)
 
-        setUpRecyclerView(mutableListOf<Source>())
+        setUpRecyclerView(mutableListOf<ExpandCollapseModel>())
 
         viewModel.newsSources.observe(this, Observer {
             when(it){
                 is Resource.Success -> {
                     hideProgressBar()
                     hideErrorMessage()
-                    setUpRecyclerView(it.data?.sources ?: mutableListOf<Source>())
+                    setUpRecyclerView(viewModel.prepareSourcesDataForExpandableAdapter(it.data?.sources ?: mutableListOf<Source>()))
                 }
                 is Resource.Error -> {
                     hideProgressBar()
@@ -64,8 +65,8 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
                     hideProgressBar()
                     hideErrorMessage()
                     it.data?.let {
-                        //TODO
-                        //newsAdapter.refreshList(it.articles, viewModel.rowPositionTracker)
+                        val topHeadlinesList = it.articles
+                        newsAdapter.expandRow(viewModel.prepareTopHeadlinesDataForExpandableAdapter(topHeadlinesList), viewModel.rowPositionTracker)
                         val totalPages = it.totalResults / QUERY_PAGE_SIZE + 2
                         isLastPage = viewModel.topHeadlinesPageNumber == totalPages
                         if(isLastPage) {
@@ -138,18 +139,20 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
         isError = true
     }
 
-    private fun setUpRecyclerView(source: MutableList<Source>) {
-        newsAdapter = NewsAdapter(source)
+    private fun setUpRecyclerView(newsList: MutableList<ExpandCollapseModel>) {
+        newsAdapter = NewsAdapter(newsList)
         newsAdapter.let {
             it.setCallBackInterface(this)
             news_rv.apply {
                 adapter = it
                 layoutManager = LinearLayoutManager(this@NewsActivity)
+                addOnScrollListener(scrollListener)
             }
         }
     }
 
     override fun callBackMethod(sourceId: String, rowPosition: Int) {
+        viewModel.topHeadlinesPageNumber = 1
         viewModel.sourceIdTracker = sourceId
         viewModel.rowPositionTracker = rowPosition
         viewModel.getTopHeadlineArticles(sourceId)

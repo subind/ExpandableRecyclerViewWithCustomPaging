@@ -41,7 +41,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/icon_expand"
-        tools:ignore="VectorDrawableCompat"/>
+        tools:ignore="VectorDrawableCompat"
+        android:visibility="gone"/>
 
     <ImageView
         android:id="@+id/iv_collapse"

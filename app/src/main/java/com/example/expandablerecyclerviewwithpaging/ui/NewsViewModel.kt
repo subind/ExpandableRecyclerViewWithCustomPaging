@@ -10,8 +10,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.expandablerecyclerviewwithpaging.NewsApplication
-import com.example.expandablerecyclerviewwithpaging.models.SourcesResponse
-import com.example.expandablerecyclerviewwithpaging.models.TopHeadlinesResponse
+import com.example.expandablerecyclerviewwithpaging.models.*
 import com.example.expandablerecyclerviewwithpaging.repository.NewsRepository
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.NEWS_LANGUAGE
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.STATUS_OK
@@ -127,6 +126,30 @@ class NewsViewModel(
             }
         }
         return false
+    }
+
+    fun prepareSourcesDataForExpandableAdapter(sourcesList: MutableList<Source>): MutableList<ExpandCollapseModel>{
+        var expandableNewsList = mutableListOf<ExpandCollapseModel>()
+        for (sources in sourcesList) {
+            var expandableModel = ExpandCollapseModel()
+            expandableModel.type = ExpandCollapseModel.HEADER
+            expandableModel.header = sources
+            expandableModel.child = null
+            expandableNewsList.add(expandableModel)
+        }
+        return expandableNewsList
+    }
+
+    fun prepareTopHeadlinesDataForExpandableAdapter(topHeadlinesList: MutableList<Article>): MutableList<ExpandCollapseModel>{
+        var expandableNewsList = mutableListOf<ExpandCollapseModel>()
+        for (topHeadlines in topHeadlinesList) {
+            var expandableModel = ExpandCollapseModel()
+            expandableModel.type = ExpandCollapseModel.CHILD
+            expandableModel.child = topHeadlines
+            expandableModel.header = null
+            expandableNewsList.add(expandableModel)
+        }
+        return expandableNewsList
     }
 
 }
