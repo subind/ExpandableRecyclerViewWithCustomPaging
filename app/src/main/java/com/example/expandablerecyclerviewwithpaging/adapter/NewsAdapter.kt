@@ -60,8 +60,28 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
                 }
 
                 holder.expandArrow.setOnClickListener {
-                    collapseRow(position)
-                    myCallBackInterface?.callBackMethod(row.header?.id ?: "us", position)
+
+                    var noOfRowsRemoved = 0
+                    var lastChildIndexPosition = -1
+
+                    val iteratorNew = newsList.listIterator()
+                    for ((index, value) in iteratorNew.withIndex()) {
+                        var type = value.type
+                        if(type == ExpandCollapseModel.CHILD){
+                            lastChildIndexPosition = index
+                            ++noOfRowsRemoved
+                            println("The element at $index is $value")
+                            iteratorNew.remove()
+                        }
+                    }
+
+                    if(position > lastChildIndexPosition){
+                        var position = position
+                        position -= noOfRowsRemoved
+                        myCallBackInterface?.callBackMethod(newsList[position].header?.id ?: "us", position)
+                    }else{
+                        myCallBackInterface?.callBackMethod(newsList[position].header?.id ?: "us", position)
+                    }
                 }
                 holder.collapseArrow.setOnClickListener {
                     collapseRow(position)
