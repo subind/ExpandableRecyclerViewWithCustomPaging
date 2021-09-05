@@ -95,6 +95,7 @@ class NewsViewModel(
         if (response.isSuccessful) {
             response.body()?.let {
                 totalChildCount = it.totalResults
+                rowPositionTracker += loadedChildCount
                 loadedChildCount += it.articles.size
 
                 topHeadlinesPageNumber++
