@@ -81,9 +81,9 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
                     if(position > lastChildIndexPosition){
                         var position = position
                         position -= noOfChildRowsRemoved
-                        myCallBackInterface?.callBackMethod(newsList[position].header?.id ?: "us", position)
+                        myCallBackInterface?.callBackMethod(newsList[position].header?.id ?: "", position)
                     }else{
-                        myCallBackInterface?.callBackMethod(newsList[position].header?.id ?: "us", position)
+                        myCallBackInterface?.callBackMethod(newsList[position].header?.id ?: "", position)
                     }
                 }
                 holder.collapseArrow.setOnClickListener {
