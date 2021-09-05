@@ -25,12 +25,14 @@ class NewsViewModel(
 ) : AndroidViewModel(app) {
 
     val newsSources: MutableLiveData<Resource<SourcesResponse>> = MutableLiveData()
-
     val topHeadlines: MutableLiveData<Resource<TopHeadlinesResponse>> = MutableLiveData()
 
     var rowPositionTracker: Int = -1
     var sourceIdTracker: String? = null
     var topHeadlinesPageNumber = 1
+
+    var loadedChildCount = 0
+    var totalChildCount = -1
 
     init {
         getNewsSources(NEWS_LANGUAGE)
@@ -92,6 +94,9 @@ class NewsViewModel(
     private fun handleTopHeadlinesArticlesResponse(response: Response<TopHeadlinesResponse>): Resource<TopHeadlinesResponse>? {
         if (response.isSuccessful) {
             response.body()?.let {
+                totalChildCount = it.totalResults
+                loadedChildCount += it.articles.size
+
                 topHeadlinesPageNumber++
                 if (it.status == STATUS_OK) {
                     return Resource.Success(it)

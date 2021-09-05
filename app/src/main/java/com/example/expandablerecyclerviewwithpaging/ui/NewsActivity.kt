@@ -1,6 +1,7 @@
 package com.example.expandablerecyclerviewwithpaging.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.AbsListView
 import android.widget.Toast
@@ -99,13 +100,11 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
 
             val isNoErrors = !isError
             val isNotLoadingAndNotLastPage = !isLoading && !isLastPage
-            val isAtLastItem = firstVisibleItemPosition + visibleItemCount >= totalItemCount
+            val isAtLastItem = viewModel.loadedChildCount>=viewModel.totalChildCount
             val isNotAtBeginning = firstVisibleItemPosition >= 0
-            val isTotalMoreThanVisible = totalItemCount >= QUERY_PAGE_SIZE
-            val shouldPaginate = isNoErrors && isNotLoadingAndNotLastPage && isAtLastItem && isNotAtBeginning &&
-                    isTotalMoreThanVisible && isScrolling
+            val shouldPaginate = isNoErrors && isNotLoadingAndNotLastPage && !isAtLastItem && isNotAtBeginning && isScrolling
             if(shouldPaginate) {
-                viewModel.getTopHeadlineArticles(viewModel.sourceIdTracker ?: "us")
+                viewModel.getTopHeadlineArticles(viewModel.sourceIdTracker ?: "")
                 isScrolling = false
             }
         }
@@ -152,6 +151,9 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
     }
 
     override fun callBackMethod(sourceId: String, rowPosition: Int) {
+        viewModel.loadedChildCount = 0
+        viewModel.totalChildCount = -1
+
         viewModel.topHeadlinesPageNumber = 1
         viewModel.sourceIdTracker = sourceId
         viewModel.rowPositionTracker = rowPosition
