@@ -6,7 +6,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.expandablerecyclerviewwithpaging.R
 import com.example.expandablerecyclerviewwithpaging.models.ExpandCollapseModel
-import com.example.expandablerecyclerviewwithpaging.models.Source
 import com.example.expandablerecyclerviewwithpaging.util.MyCallBackInterface
 import kotlinx.android.synthetic.main.child_row.view.*
 import kotlinx.android.synthetic.main.header_row.view.*
@@ -61,23 +60,27 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
 
                 holder.expandArrow.setOnClickListener {
 
-                    var noOfRowsRemoved = 0
+                    var noOfChildRowsRemoved = 0
                     var lastChildIndexPosition = -1
+                    var collapseArrowswitch = true
 
-                    val iteratorNew = newsList.listIterator()
-                    for ((index, value) in iteratorNew.withIndex()) {
+                    val iterator = newsList.listIterator()
+                    for ((index, value) in iterator.withIndex()) {
                         var type = value.type
                         if(type == ExpandCollapseModel.CHILD){
+                            if(collapseArrowswitch) {
+                                newsList[index - 1].isExpanded = false
+                                collapseArrowswitch = false
+                            }
                             lastChildIndexPosition = index
-                            ++noOfRowsRemoved
-                            println("The element at $index is $value")
-                            iteratorNew.remove()
+                            ++noOfChildRowsRemoved
+                            iterator.remove()
                         }
                     }
 
                     if(position > lastChildIndexPosition){
                         var position = position
-                        position -= noOfRowsRemoved
+                        position -= noOfChildRowsRemoved
                         myCallBackInterface?.callBackMethod(newsList[position].header?.id ?: "us", position)
                     }else{
                         myCallBackInterface?.callBackMethod(newsList[position].header?.id ?: "us", position)
@@ -111,9 +114,10 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
 
     fun collapseRow(rowToBeInsertedAt: Int){
         newsList[rowToBeInsertedAt].isExpanded = false
-        val iterator = newsList.iterator()
-        while(iterator.hasNext()){
-            var type = iterator.next().type
+
+        val iterator = newsList.listIterator()
+        for ((index, value) in iterator.withIndex()) {
+            var type = value.type
             if(type == ExpandCollapseModel.CHILD){
                 iterator.remove()
             }
