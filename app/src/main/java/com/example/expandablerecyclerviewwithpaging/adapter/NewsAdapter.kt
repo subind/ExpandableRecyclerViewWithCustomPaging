@@ -13,7 +13,7 @@ import kotlinx.android.synthetic.main.header_row.view.*
 class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     var myCallBackInterface: MyCallBackInterface? = null
-    inner class NewsViewHolder(itemView: View): RecyclerView.ViewHolder(itemView)
+    var isAnyRowExpanded = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
@@ -62,15 +62,15 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
 
                     var noOfChildRowsRemoved = 0
                     var lastChildIndexPosition = -1
-                    var collapseArrowswitch = true
+                    var collapseArrowSwitch = true
 
                     val iterator = newsList.listIterator()
                     for ((index, value) in iterator.withIndex()) {
                         var type = value.type
                         if(type == ExpandCollapseModel.CHILD){
-                            if(collapseArrowswitch) {
+                            if(collapseArrowSwitch) {
                                 newsList[index - 1].isExpanded = false
-                                collapseArrowswitch = false
+                                collapseArrowSwitch = false
                             }
                             lastChildIndexPosition = index
                             ++noOfChildRowsRemoved
@@ -106,13 +106,14 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
     }
 
     fun expandRow(newListContents: MutableList<ExpandCollapseModel>, rowToBeInsertedAt: Int){
-        //Added Refreshed List
+        isAnyRowExpanded = true
         newsList[rowToBeInsertedAt].isExpanded = true
         newsList.addAll(rowToBeInsertedAt + 1, newListContents)
         notifyDataSetChanged()
     }
 
     fun collapseRow(rowToBeInsertedAt: Int){
+        isAnyRowExpanded = false
         newsList[rowToBeInsertedAt].isExpanded = false
 
         val iterator = newsList.listIterator()

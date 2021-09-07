@@ -28,7 +28,7 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
     var isError = false
     var isLoading = false
     var isLastPage = false
-    var isScrolling = false
+    var isChildScrolling = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,6 +71,7 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
                         val totalPages = it.totalResults / QUERY_PAGE_SIZE + 2
                         isLastPage = viewModel.topHeadlinesPageNumber == totalPages
                         if(isLastPage) {
+                            newsAdapter.isAnyRowExpanded = false
                             Toast.makeText(this, "Final page loaded", Toast.LENGTH_LONG).show()
                         }
                     }
@@ -102,17 +103,19 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
             val isNotLoadingAndNotLastPage = !isLoading && !isLastPage
             val isAtLastItem = viewModel.loadedChildCount>=viewModel.totalChildCount
             val isNotAtBeginning = firstVisibleItemPosition >= 0
-            val shouldPaginate = isNoErrors && isNotLoadingAndNotLastPage && !isAtLastItem && isNotAtBeginning && isScrolling
+            val shouldPaginate = isNoErrors && isNotLoadingAndNotLastPage && !isAtLastItem && isNotAtBeginning && isChildScrolling
             if(shouldPaginate) {
                 viewModel.getTopHeadlineArticles(viewModel.sourceIdTracker ?: "")
-                isScrolling = false
+                isChildScrolling = false
             }
         }
 
         override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
             super.onScrollStateChanged(recyclerView, newState)
             if(newState == AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL) {
-                isScrolling = true
+                if(newsAdapter.isAnyRowExpanded) {
+                    isChildScrolling = true
+                }
             }
         }
     }
