@@ -13,26 +13,33 @@ import kotlinx.android.synthetic.main.header_row.view.*
 class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     var myCallBackInterface: MyCallBackInterface? = null
+
+    /**
+     * In the NewsActivity we have RV adapters onScrollListener, & since currently we have
+     * implemented paging only for child row elements, we need to know the changes in
+     * onScrollStateChanged only in this condition (i.e, whenever child rows are visible), & its
+     * based on which we identify whether the child row elements are being scrolled through or not.
+     */
     var isAnyRowExpanded = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
-            ExpandCollapseModel.HEADER -> {
-                HeaderViewHolder(
+            ExpandCollapseModel.SOURCE_HEADER -> {
+                SourceHeaderViewHolder(
                     LayoutInflater.from(parent.context).inflate(
                         R.layout.header_row, parent, false
                     )
                 )
             }
-            ExpandCollapseModel.CHILD -> {
-                ChildViewHolder(
+            ExpandCollapseModel.ARTICLE_CHILD -> {
+                ArticleChildViewHolder(
                     LayoutInflater.from(parent.context).inflate(
                         R.layout.child_row, parent, false
                     )
                 )
             }
             else -> {
-                HeaderViewHolder(
+                SourceHeaderViewHolder(
                     LayoutInflater.from(parent.context).inflate(
                         R.layout.header_row, parent, false
                     )
@@ -44,9 +51,13 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val row = newsList[position]
         when (row.type) {
-            ExpandCollapseModel.HEADER -> {
-                (holder as HeaderViewHolder).headerTitle.text = row.header?.name
+            ExpandCollapseModel.SOURCE_HEADER -> {
+                (holder as SourceHeaderViewHolder).sourceHeaderTitle.text = row.header?.name
 
+                /**
+                 * The 'isExpanded' property in the ExpandCollapseModel is used to keep track of the
+                 * expand & collapse arrow images.
+                 */
                 when(row.isExpanded){
                     true -> {
                         holder.expandArrow.visibility = View.GONE
@@ -58,16 +69,24 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
                     }
                 }
 
+                /**
+                 * As per current logic, before expansion of the selected header row, any other
+                 * header row which was previously expanded needs to be collapsed.
+                 */
                 holder.expandArrow.setOnClickListener {
 
                     var noOfChildRowsRemoved = 0
                     var lastChildIndexPosition = -1
                     var collapseArrowSwitch = true
 
+                    /**
+                     * Since we are maintaining a single list that contains both header & child row
+                     * data's, we loop through this list & remove all the child row types.
+                     */
                     val iterator = newsList.listIterator()
                     for ((index, value) in iterator.withIndex()) {
                         var type = value.type
-                        if(type == ExpandCollapseModel.CHILD){
+                        if(type == ExpandCollapseModel.ARTICLE_CHILD){
                             if(collapseArrowSwitch) {
                                 newsList[index - 1].isExpanded = false
                                 collapseArrowSwitch = false
@@ -78,6 +97,13 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
                         }
                     }
 
+                    /**
+                     * If the newly selected row comes beneath/after the already expanded row, &
+                     * since we remove all the child row types from the list, the position of the
+                     * row to be expanded obtained from the onBindViewHolder, will not be correct
+                     * anymore, hence we are subtracting the no: of child rows removed to get the
+                     * clicked header rows position.
+                     */
                     if(position > lastChildIndexPosition){
                         var position = position
                         position -= noOfChildRowsRemoved
@@ -90,9 +116,9 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
                     collapseRow(position)
                 }
             }
-            ExpandCollapseModel.CHILD -> {
-                (holder as ChildViewHolder).childTitle.text = row.child?.title
-                holder.childDescription.text = row.child?.description
+            ExpandCollapseModel.ARTICLE_CHILD -> {
+                (holder as ArticleChildViewHolder).articleChildTitle.text = row.child?.title
+                holder.articleChildDescription.text = row.child?.description
             }
         }
     }
@@ -119,24 +145,22 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
         val iterator = newsList.listIterator()
         for ((index, value) in iterator.withIndex()) {
             var type = value.type
-            if(type == ExpandCollapseModel.CHILD){
+            if(type == ExpandCollapseModel.ARTICLE_CHILD){
                 iterator.remove()
             }
         }
         notifyDataSetChanged()
     }
 
-    class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        internal var layout = itemView.header_row
-        internal var headerTitle = itemView.tv_header
+    class SourceHeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        internal var sourceHeaderTitle = itemView.tv_header
         internal var expandArrow = itemView.iv_expand
         internal var collapseArrow = itemView.iv_collapse
     }
 
-    class ChildViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        internal var layout = itemView.child_row
-        internal var childTitle = itemView.tv_child_title
-        internal var childDescription = itemView.tv_child_desc
+    class ArticleChildViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        internal var articleChildTitle = itemView.tv_child_title
+        internal var articleChildDescription = itemView.tv_child_desc
     }
 
 }

@@ -24,15 +24,29 @@ class NewsViewModel(
     private val newsRepository: NewsRepository
 ) : AndroidViewModel(app) {
 
-    val newsSources: MutableLiveData<Resource<SourcesResponse>> = MutableLiveData()
-    val topHeadlines: MutableLiveData<Resource<TopHeadlinesResponse>> = MutableLiveData()
+    /**
+     * Please note:
+     * In this app "newsSources" is the header's, whereas
+     * the "newsArticles" are the child rows that will be visible if any header row is expanded.
+     */
+    val newsSourcesList: MutableLiveData<Resource<SourcesResponse>> = MutableLiveData()
+    val newsArticlesList: MutableLiveData<Resource<ArticlesResponse>> = MutableLiveData()
 
+    /**
+     * The 'rowPositionTracker' is helpful in keeping track of the position of the last child element
+     * that was added, so that the new list of data obtained via paging can be added right beneath
+     * the already rendered list.
+     */
     var rowPositionTracker: Int = -1
-    var sourceIdTracker: String? = null
-    var topHeadlinesPageNumber = 1
+    var newsSourceIdTracker: String? = null
+    var newsArticlesPageNumber = 1
 
-    var loadedChildCount = 0
-    var totalChildCount = -1
+    /**
+     * The 'loadedArticleChildCount' indicates the no: of child row elements collectively obtained through
+     * each paging attempt.
+     */
+    var loadedArticleChildCount = 0
+    var totalArticleChildCount = -1
 
     init {
         getNewsSources(NEWS_LANGUAGE)
@@ -43,18 +57,18 @@ class NewsViewModel(
     }
 
     private suspend fun safeNewsSourcesCall(language: String) {
-        newsSources.postValue(Resource.Loading())
+        newsSourcesList.postValue(Resource.Loading())
         try {
             if (hasInternetConnection()) {
                 val response = newsRepository.getNewsSources(language)
-                newsSources.postValue(handleSourcesResponse(response))
+                newsSourcesList.postValue(handleSourcesResponse(response))
             } else {
-                newsSources.postValue(Resource.Error("No internet connection"))
+                newsSourcesList.postValue(Resource.Error("No internet connection"))
             }
         } catch (t: Throwable) {
             when (t) {
-                is IOException -> newsSources.postValue(Resource.Error("Network Failure"))
-                else -> newsSources.postValue(Resource.Error("Conversion Error"))
+                is IOException -> newsSourcesList.postValue(Resource.Error("Network Failure"))
+                else -> newsSourcesList.postValue(Resource.Error("Conversion Error"))
             }
         }
     }
@@ -70,35 +84,35 @@ class NewsViewModel(
         return Resource.Error(response.message())
     }
 
-    fun getTopHeadlineArticles(source: String) = viewModelScope.launch {
-        safeTopHeadlinesArticlesCall(source)
+    fun getNewsArticles(source: String) = viewModelScope.launch {
+        safeNewsArticlesCall(source)
     }
 
-    private suspend fun safeTopHeadlinesArticlesCall(source: String) {
-        topHeadlines.postValue(Resource.Loading())
+    private suspend fun safeNewsArticlesCall(source: String) {
+        newsArticlesList.postValue(Resource.Loading())
         try {
             if (hasInternetConnection()) {
-                val response = newsRepository.getTopHeadlines(source, topHeadlinesPageNumber)
-                topHeadlines.postValue(handleTopHeadlinesArticlesResponse(response))
+                val response = newsRepository.getNewsArticles(source, newsArticlesPageNumber)
+                newsArticlesList.postValue(handleNewsArticlesResponse(response))
             } else {
-                topHeadlines.postValue(Resource.Error("No internet connection"))
+                newsArticlesList.postValue(Resource.Error("No internet connection"))
             }
         } catch (t: Throwable) {
             when (t) {
-                is IOException -> topHeadlines.postValue(Resource.Error("Network Failure"))
-                else -> topHeadlines.postValue(Resource.Error("Conversion Error"))
+                is IOException -> newsArticlesList.postValue(Resource.Error("Network Failure"))
+                else -> newsArticlesList.postValue(Resource.Error("Conversion Error"))
             }
         }
     }
 
-    private fun handleTopHeadlinesArticlesResponse(response: Response<TopHeadlinesResponse>): Resource<TopHeadlinesResponse>? {
+    private fun handleNewsArticlesResponse(response: Response<ArticlesResponse>): Resource<ArticlesResponse>? {
         if (response.isSuccessful) {
             response.body()?.let {
-                totalChildCount = it.totalResults
-                rowPositionTracker += loadedChildCount
-                loadedChildCount += it.articles.size
+                totalArticleChildCount = it.totalResults
+                rowPositionTracker += loadedArticleChildCount
+                loadedArticleChildCount += it.articles.size
 
-                topHeadlinesPageNumber++
+                newsArticlesPageNumber++
                 if (it.status == STATUS_OK) {
                     return Resource.Success(it)
                 }
@@ -134,11 +148,16 @@ class NewsViewModel(
         return false
     }
 
+    /**
+     * The below methods "prepareSourcesDataForExpandableAdapter" & "prepareTopHeadlinesDataForExpandableAdapter"
+     * create a list of ExpandCollapseModel type, since the NewsAdapter class deals with a single list of type
+     * ExpandCollapseModel, that has properties to distinguish header, child also whether the row is expanded.
+     */
     fun prepareSourcesDataForExpandableAdapter(sourcesList: MutableList<Source>): MutableList<ExpandCollapseModel>{
         var expandableNewsList = mutableListOf<ExpandCollapseModel>()
         for (sources in sourcesList) {
             var expandableModel = ExpandCollapseModel()
-            expandableModel.type = ExpandCollapseModel.HEADER
+            expandableModel.type = ExpandCollapseModel.SOURCE_HEADER
             expandableModel.header = sources
             expandableModel.child = null
             expandableNewsList.add(expandableModel)
@@ -150,7 +169,7 @@ class NewsViewModel(
         var expandableNewsList = mutableListOf<ExpandCollapseModel>()
         for (topHeadlines in topHeadlinesList) {
             var expandableModel = ExpandCollapseModel()
-            expandableModel.type = ExpandCollapseModel.CHILD
+            expandableModel.type = ExpandCollapseModel.ARTICLE_CHILD
             expandableModel.child = topHeadlines
             expandableModel.header = null
             expandableNewsList.add(expandableModel)

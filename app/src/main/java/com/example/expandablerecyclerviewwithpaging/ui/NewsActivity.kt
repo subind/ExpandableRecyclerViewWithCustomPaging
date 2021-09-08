@@ -1,7 +1,6 @@
 package com.example.expandablerecyclerviewwithpaging.ui
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.AbsListView
 import android.widget.Toast
@@ -40,7 +39,7 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
 
         setUpRecyclerView(mutableListOf<ExpandCollapseModel>())
 
-        viewModel.newsSources.observe(this, Observer {
+        viewModel.newsSourcesList.observe(this, Observer {
             when(it){
                 is Resource.Success -> {
                     hideProgressBar()
@@ -60,7 +59,7 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
             }
         })
 
-        viewModel.topHeadlines.observe(this, Observer {
+        viewModel.newsArticlesList.observe(this, Observer {
             when(it){
                 is Resource.Success -> {
                     hideProgressBar()
@@ -68,8 +67,14 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
                     it.data?.let {
                         val topHeadlinesList = it.articles
                         newsAdapter.expandRow(viewModel.prepareTopHeadlinesDataForExpandableAdapter(topHeadlinesList), viewModel.rowPositionTracker)
+                        /**
+                         * The below formula is used to determine the no: of pages to paginate,
+                         * here "QUERY_PAGE_SIZE" is the constant that we sent to the api to get the
+                         * number of topHeadline articles in each request, whereas "totalResults"
+                         * depicts the no: of art topHeadline articles available.
+                         */
                         val totalPages = it.totalResults / QUERY_PAGE_SIZE + 2
-                        isLastPage = viewModel.topHeadlinesPageNumber == totalPages
+                        isLastPage = viewModel.newsArticlesPageNumber == totalPages
                         if(isLastPage) {
                             newsAdapter.isAnyRowExpanded = false
                             Toast.makeText(this, "Final page loaded", Toast.LENGTH_LONG).show()
@@ -101,11 +106,11 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
 
             val isNoErrors = !isError
             val isNotLoadingAndNotLastPage = !isLoading && !isLastPage
-            val isAtLastItem = viewModel.loadedChildCount>=viewModel.totalChildCount
+            val isAtLastItem = viewModel.loadedArticleChildCount>=viewModel.totalArticleChildCount
             val isNotAtBeginning = firstVisibleItemPosition >= 0
             val shouldPaginate = isNoErrors && isNotLoadingAndNotLastPage && !isAtLastItem && isNotAtBeginning && isChildScrolling
             if(shouldPaginate) {
-                viewModel.getTopHeadlineArticles(viewModel.sourceIdTracker ?: "")
+                viewModel.getNewsArticles(viewModel.newsSourceIdTracker ?: "")
                 isChildScrolling = false
             }
         }
@@ -113,6 +118,10 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
         override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
             super.onScrollStateChanged(recyclerView, newState)
             if(newState == AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL) {
+                /**
+                 * "isChildScrolling" is used to determine whether to paginate or not.
+                 * The "isAnyRowExpanded" (explained in NewsAdapter class)
+                 */
                 if(newsAdapter.isAnyRowExpanded) {
                     isChildScrolling = true
                 }
@@ -154,13 +163,13 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
     }
 
     override fun callBackMethod(sourceId: String, rowPosition: Int) {
-        viewModel.loadedChildCount = 0
-        viewModel.totalChildCount = -1
+        viewModel.loadedArticleChildCount = 0
+        viewModel.totalArticleChildCount = -1
 
-        viewModel.topHeadlinesPageNumber = 1
-        viewModel.sourceIdTracker = sourceId
+        viewModel.newsArticlesPageNumber = 1
+        viewModel.newsSourceIdTracker = sourceId
         viewModel.rowPositionTracker = rowPosition
-        viewModel.getTopHeadlineArticles(sourceId)
+        viewModel.getNewsArticles(sourceId)
     }
 
 }

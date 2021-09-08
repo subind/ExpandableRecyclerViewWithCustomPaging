@@ -1,8 +1,8 @@
 package com.example.expandablerecyclerviewwithpaging.api
 
 import com.example.expandablerecyclerviewwithpaging.models.SourcesResponse
-import com.example.expandablerecyclerviewwithpaging.models.TopHeadlinesResponse
-import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.API_KEY
+import com.example.expandablerecyclerviewwithpaging.models.ArticlesResponse
+import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.API_KEY_2
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.NEWS_LANGUAGE
 import retrofit2.Response
 import retrofit2.http.GET
@@ -13,7 +13,7 @@ interface NewsAPI {
     @GET("/v2/top-headlines/sources")
     suspend fun getNewsSources(
         @Query("apiKey")
-        apiKey: String = API_KEY,
+        apiKey: String = API_KEY_2,
         @Query("language")
         language: String = NEWS_LANGUAGE
     ): Response<SourcesResponse>
@@ -25,9 +25,9 @@ interface NewsAPI {
      * data wasn't available from the server to achieve/test pagination
      */
     @GET("/v2/top-headlines")
-    suspend fun getTopHeadlines(
+    suspend fun getNewsArticles(
         @Query("apiKey")
-        apiKey: String = API_KEY,
+        apiKey: String = API_KEY_2,
         /*@Query("sources")
         sources: String*/
         @Query("country")
@@ -36,6 +36,6 @@ interface NewsAPI {
         pageSize: Int = 20,
         @Query("page")
         pageNumber: Int
-    ): Response<TopHeadlinesResponse>
+    ): Response<ArticlesResponse>
 
 }
