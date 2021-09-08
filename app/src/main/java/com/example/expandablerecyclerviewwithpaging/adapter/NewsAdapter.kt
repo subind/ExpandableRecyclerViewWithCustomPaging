@@ -10,6 +10,10 @@ import com.example.expandablerecyclerviewwithpaging.util.MyCallBackInterface
 import kotlinx.android.synthetic.main.child_row.view.*
 import kotlinx.android.synthetic.main.header_row.view.*
 
+/**
+ * Please note:-
+ * We are achieving expansion/collapse using a single list of custom model type "ExpandCollapseModel"
+ */
 class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     var myCallBackInterface: MyCallBackInterface? = null
@@ -52,7 +56,7 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
         val row = newsList[position]
         when (row.type) {
             ExpandCollapseModel.SOURCE_HEADER -> {
-                (holder as SourceHeaderViewHolder).sourceHeaderTitle.text = row.header?.name
+                (holder as SourceHeaderViewHolder).sourceHeaderTitle.text = row.sourceHeader?.name
 
                 /**
                  * The 'isExpanded' property in the ExpandCollapseModel is used to keep track of the
@@ -107,9 +111,9 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
                     if(position > lastChildIndexPosition){
                         var position = position
                         position -= noOfChildRowsRemoved
-                        myCallBackInterface?.callBackMethod(newsList[position].header?.id ?: "", position)
+                        myCallBackInterface?.callBackMethod(newsList[position].sourceHeader?.id ?: "", position)
                     }else{
-                        myCallBackInterface?.callBackMethod(newsList[position].header?.id ?: "", position)
+                        myCallBackInterface?.callBackMethod(newsList[position].sourceHeader?.id ?: "", position)
                     }
                 }
                 holder.collapseArrow.setOnClickListener {
@@ -117,8 +121,8 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
                 }
             }
             ExpandCollapseModel.ARTICLE_CHILD -> {
-                (holder as ArticleChildViewHolder).articleChildTitle.text = row.child?.title
-                holder.articleChildDescription.text = row.child?.description
+                (holder as ArticleChildViewHolder).articleChildTitle.text = row.articleChild?.title
+                holder.articleChildDescription.text = row.articleChild?.description
             }
         }
     }

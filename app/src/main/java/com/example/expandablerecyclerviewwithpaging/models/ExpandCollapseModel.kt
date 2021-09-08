@@ -1,5 +1,9 @@
 package com.example.expandablerecyclerviewwithpaging.models
 
+/**
+ * A custom model that helps us create a single list of this type.
+ * That has properties which enables us to distinguish between Header & Child rows
+ */
 class ExpandCollapseModel {
 
     companion object{
@@ -9,7 +13,7 @@ class ExpandCollapseModel {
 
     var type: Int = 0
     var isExpanded: Boolean = false
-    var header: Source? = null
-    var child: Article? = null
+    var sourceHeader: Source? = null
+    var articleChild: Article? = null
 
 }

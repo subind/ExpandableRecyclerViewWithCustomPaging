@@ -158,8 +158,8 @@ class NewsViewModel(
         for (sources in sourcesList) {
             var expandableModel = ExpandCollapseModel()
             expandableModel.type = ExpandCollapseModel.SOURCE_HEADER
-            expandableModel.header = sources
-            expandableModel.child = null
+            expandableModel.sourceHeader = sources
+            expandableModel.articleChild = null
             expandableNewsList.add(expandableModel)
         }
         return expandableNewsList
@@ -170,8 +170,8 @@ class NewsViewModel(
         for (topHeadlines in topHeadlinesList) {
             var expandableModel = ExpandCollapseModel()
             expandableModel.type = ExpandCollapseModel.ARTICLE_CHILD
-            expandableModel.child = topHeadlines
-            expandableModel.header = null
+            expandableModel.articleChild = topHeadlines
+            expandableModel.sourceHeader = null
             expandableNewsList.add(expandableModel)
         }
         return expandableNewsList
