@@ -66,7 +66,7 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
                     hideErrorMessage()
                     it.data?.let {
                         val topHeadlinesList = it.articles
-                        newsAdapter.expandRow(viewModel.prepareTopHeadlinesDataForExpandableAdapter(topHeadlinesList), viewModel.rowPositionTracker)
+                        newsAdapter.expandRow(viewModel.prepareNewsArticlesDataForExpandableAdapter(topHeadlinesList), viewModel.rowPositionTracker)
                         /**
                          * The below formula is used to determine the no: of pages to paginate,
                          * here "QUERY_PAGE_SIZE" is the constant that we sent to the api to get the

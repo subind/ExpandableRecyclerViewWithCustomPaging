@@ -137,7 +137,9 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
 
     fun expandRow(newListContents: MutableList<ExpandCollapseModel>, rowToBeInsertedAt: Int){
         isAnyRowExpanded = true
-        newsList[rowToBeInsertedAt].isExpanded = true
+        if(newsList[rowToBeInsertedAt].type == ExpandCollapseModel.SOURCE_HEADER) {
+            newsList[rowToBeInsertedAt].isExpanded = true
+        }
         newsList.addAll(rowToBeInsertedAt + 1, newListContents)
         notifyDataSetChanged()
     }

@@ -109,7 +109,9 @@ class NewsViewModel(
         if (response.isSuccessful) {
             response.body()?.let {
                 totalArticleChildCount = it.totalResults
-                rowPositionTracker += loadedArticleChildCount
+                if(loadedArticleChildCount != 0){
+                    rowPositionTracker += it.articles.size
+                }
                 loadedArticleChildCount += it.articles.size
 
                 newsArticlesPageNumber++
@@ -165,7 +167,7 @@ class NewsViewModel(
         return expandableNewsList
     }
 
-    fun prepareTopHeadlinesDataForExpandableAdapter(topHeadlinesList: MutableList<Article>): MutableList<ExpandCollapseModel>{
+    fun prepareNewsArticlesDataForExpandableAdapter(topHeadlinesList: MutableList<Article>): MutableList<ExpandCollapseModel>{
         var expandableNewsList = mutableListOf<ExpandCollapseModel>()
         for (topHeadlines in topHeadlinesList) {
             var expandableModel = ExpandCollapseModel()
