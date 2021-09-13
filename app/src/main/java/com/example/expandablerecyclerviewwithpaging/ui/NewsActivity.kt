@@ -1,6 +1,7 @@
 package com.example.expandablerecyclerviewwithpaging.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.AbsListView
 import android.widget.Toast
@@ -28,6 +29,9 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
     var isLoading = false
     var isLastPage = false
     var isChildScrolling = false
+    var currentPos = 0
+    var scrollToPos = 0
+    var expandDummy = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,6 +71,11 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
                     it.data?.let {
                         val topHeadlinesList = it.articles
                         newsAdapter.expandRow(viewModel.prepareNewsArticlesDataForExpandableAdapter(topHeadlinesList), viewModel.rowPositionTracker)
+                        if(scrollToPos > 0 && expandDummy){
+                            news_rv.scrollToPosition(scrollToPos)
+                            expandDummy = false
+                            Log.i("subind", "scrolledTo: $scrollToPos")
+                        }
                         /**
                          * The below formula is used to determine the no: of pages to paginate,
                          * here "QUERY_PAGE_SIZE" is the constant that we sent to the api to get the
@@ -126,6 +135,10 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
                     isChildScrolling = true
                 }
             }
+            if(newState == AbsListView.OnScrollListener.SCROLL_STATE_IDLE) {
+                currentPos = (news_rv.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+                Log.i("subind", "currentPos: $currentPos")
+            }
         }
     }
 
@@ -171,5 +184,13 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
         viewModel.rowPositionTracker = rowPosition
         viewModel.getNewsArticles(sourceId)
     }
+
+    override fun noOfItemsRemoved(number: Int, expandDummy: Boolean) {
+        Log.i("subind", "number: $number")
+        scrollToPos = currentPos - number
+        this.expandDummy = expandDummy
+        Log.i("subind", "scrollToPos: $scrollToPos, expandDummy: $expandDummy")
+    }
+
 
 }

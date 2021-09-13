@@ -100,6 +100,9 @@ class NewsAdapter(val newsList: MutableList<ExpandCollapseModel>): RecyclerView.
                             iterator.remove()
                         }
                     }
+                    if(noOfChildRowsRemoved > 0){
+                        myCallBackInterface?.noOfItemsRemoved(noOfChildRowsRemoved, true)
+                    }
 
                     /**
                      * If the newly selected row comes beneath/after the already expanded row, &
