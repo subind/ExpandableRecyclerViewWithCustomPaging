@@ -1,4 +1,4 @@
-package com.example.expandablerecyclerviewwithpaging.ui
+package com.example.expandablerecyclerviewwithpaging.ui.news
 
 import android.app.Application
 import androidx.lifecycle.ViewModel

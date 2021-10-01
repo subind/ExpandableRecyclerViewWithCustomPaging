@@ -1,4 +1,4 @@
-package com.example.expandablerecyclerviewwithpaging.ui
+package com.example.expandablerecyclerviewwithpaging.ui.news
 
 import android.app.Application
 import android.content.Context
@@ -12,9 +12,16 @@ import androidx.lifecycle.viewModelScope
 import com.example.expandablerecyclerviewwithpaging.NewsApplication
 import com.example.expandablerecyclerviewwithpaging.models.*
 import com.example.expandablerecyclerviewwithpaging.repository.NewsRepository
+import com.example.expandablerecyclerviewwithpaging.ui.news_intent.NewsIntent
+import com.example.expandablerecyclerviewwithpaging.ui.news_state.NewsState
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.NEWS_LANGUAGE
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.STATUS_OK
 import com.example.expandablerecyclerviewwithpaging.util.Resource
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 import okio.IOException
 import retrofit2.Response
@@ -24,13 +31,10 @@ class NewsViewModel(
     private val newsRepository: NewsRepository
 ) : AndroidViewModel(app) {
 
-    /**
-     * Please note:
-     * In this app "newsSources" is the header's, whereas
-     * the "newsArticles" are the child rows that will be visible if any header row is expanded.
-     */
-    val newsSourcesList: MutableLiveData<Resource<SourcesResponse>> = MutableLiveData()
-    val newsArticlesList: MutableLiveData<Resource<ArticlesResponse>> = MutableLiveData()
+    val newsIntent = Channel<NewsIntent>(Channel.UNLIMITED)
+    private val _state = MutableStateFlow<NewsState>(NewsState.Idle)
+    val state: StateFlow<NewsState>
+        get() = _state
 
     /**
      * The 'rowPositionTracker' is helpful in keeping track of the position of the last child element
@@ -49,7 +53,18 @@ class NewsViewModel(
     var totalArticleChildCount = -1
 
     init {
-        getNewsSources(NEWS_LANGUAGE)
+        handleIntent()
+    }
+
+    private fun handleIntent() {
+        viewModelScope.launch {
+            newsIntent.consumeAsFlow().collect {
+                when(it){
+                    is NewsIntent.FetchSources -> getNewsSources(NEWS_LANGUAGE)
+                    is NewsIntent.FetchArticles -> getNewsArticles(it.sourceId)
+                }
+            }
+        }
     }
 
     fun getNewsSources(language: String) = viewModelScope.launch {
@@ -57,18 +72,18 @@ class NewsViewModel(
     }
 
     private suspend fun safeNewsSourcesCall(language: String) {
-        newsSourcesList.postValue(Resource.Loading())
-        try {
+        _state.value = NewsState.Loading
+        _state.value = try {
             if (hasInternetConnection()) {
                 val response = newsRepository.getNewsSources(language)
-                newsSourcesList.postValue(handleSourcesResponse(response))
+                NewsState.NewsSources(handleSourcesResponse(response))
             } else {
-                newsSourcesList.postValue(Resource.Error("No internet connection"))
+                NewsState.Error("No internet connection")
             }
         } catch (t: Throwable) {
             when (t) {
-                is IOException -> newsSourcesList.postValue(Resource.Error("Network Failure"))
-                else -> newsSourcesList.postValue(Resource.Error("Conversion Error"))
+                is IOException -> NewsState.Error("Network Failure")
+                else -> NewsState.Error("Conversion Error")
             }
         }
     }
@@ -89,18 +104,18 @@ class NewsViewModel(
     }
 
     private suspend fun safeNewsArticlesCall(source: String) {
-        newsArticlesList.postValue(Resource.Loading())
-        try {
+        _state.value = NewsState.Loading
+        _state.value = try {
             if (hasInternetConnection()) {
                 val response = newsRepository.getNewsArticles(source, newsArticlesPageNumber)
-                newsArticlesList.postValue(handleNewsArticlesResponse(response))
+                NewsState.NewsArticles(handleNewsArticlesResponse(response))
             } else {
-                newsArticlesList.postValue(Resource.Error("No internet connection"))
+                NewsState.Error("No internet connection")
             }
         } catch (t: Throwable) {
             when (t) {
-                is IOException -> newsArticlesList.postValue(Resource.Error("Network Failure"))
-                else -> newsArticlesList.postValue(Resource.Error("Conversion Error"))
+                is IOException -> NewsState.Error("Network Failure")
+                else -> NewsState.Error("Conversion Error")
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.example.expandablerecyclerviewwithpaging.ui
+package com.example.expandablerecyclerviewwithpaging.ui.news
 
 import android.os.Bundle
 import android.util.Log
@@ -6,8 +6,8 @@ import android.view.View
 import android.widget.AbsListView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.expandablerecyclerviewwithpaging.R
@@ -15,11 +15,14 @@ import com.example.expandablerecyclerviewwithpaging.adapter.NewsAdapter
 import com.example.expandablerecyclerviewwithpaging.models.ExpandCollapseModel
 import com.example.expandablerecyclerviewwithpaging.models.Source
 import com.example.expandablerecyclerviewwithpaging.repository.NewsRepository
+import com.example.expandablerecyclerviewwithpaging.ui.news_intent.NewsIntent
+import com.example.expandablerecyclerviewwithpaging.ui.news_state.NewsState
 import com.example.expandablerecyclerviewwithpaging.util.Constants.Companion.QUERY_PAGE_SIZE
 import com.example.expandablerecyclerviewwithpaging.util.MyCallBackInterface
-import com.example.expandablerecyclerviewwithpaging.util.Resource
 import kotlinx.android.synthetic.main.activity_news.*
 import kotlinx.android.synthetic.main.item_error_message.*
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 class NewsActivity : AppCompatActivity(), MyCallBackInterface {
 
@@ -43,65 +46,65 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
 
         setUpRecyclerView(mutableListOf<ExpandCollapseModel>())
 
-        viewModel.newsSourcesList.observe(this, Observer {
-            when(it){
-                is Resource.Success -> {
-                    hideProgressBar()
-                    hideErrorMessage()
-                    setUpRecyclerView(viewModel.prepareSourcesDataForExpandableAdapter(it.data?.sources ?: mutableListOf<Source>()))
-                }
-                is Resource.Error -> {
-                    hideProgressBar()
-                    it.message?.let { message ->
-                        Toast.makeText(this, "An error occurred: $message", Toast.LENGTH_LONG).show()
-                        showErrorMessage(message)
-                    }
-                }
-                is Resource.Loading -> {
-                    showProgressBar()
-                }
-            }
-        })
+        initialise()
 
-        viewModel.newsArticlesList.observe(this, Observer {
-            when(it){
-                is Resource.Success -> {
-                    hideProgressBar()
-                    hideErrorMessage()
-                    it.data?.let {
-                        val topHeadlinesList = it.articles
-                        newsAdapter.expandRow(viewModel.prepareNewsArticlesDataForExpandableAdapter(topHeadlinesList), viewModel.rowPositionTracker)
-                        if(scrollToPos > 0 && expandDummy){
-                            news_rv.scrollToPosition(scrollToPos)
-                            expandDummy = false
-                            Log.i("subind", "scrolledTo: $scrollToPos")
-                        }
-                        /**
-                         * The below formula is used to determine the no: of pages to paginate,
-                         * here "QUERY_PAGE_SIZE" is the constant that we sent to the api to get the
-                         * number of topHeadline articles in each request, whereas "totalResults"
-                         * depicts the no: of art topHeadline articles available.
-                         */
-                        val totalPages = it.totalResults / QUERY_PAGE_SIZE + 2
-                        isLastPage = viewModel.newsArticlesPageNumber == totalPages
-                        if(isLastPage) {
-                            newsAdapter.isAnyRowExpanded = false
-                            Toast.makeText(this, "Final page loaded", Toast.LENGTH_LONG).show()
+        lifecycleScope.launch {
+            viewModel.state.collect {
+                when (it) {
+                    is NewsState.NewsSources -> {
+                        hideProgressBar()
+                        hideErrorMessage()
+                        setUpRecyclerView(
+                            viewModel.prepareSourcesDataForExpandableAdapter(
+                                it.sources?.data?.sources ?: mutableListOf<Source>()
+                            )
+                        )
+                    }
+                    is NewsState.NewsArticles -> {
+                        hideProgressBar()
+                        hideErrorMessage()
+                        it.articles?.data?.let {
+                            val topHeadlinesList = it.articles
+                            newsAdapter.expandRow(viewModel.prepareNewsArticlesDataForExpandableAdapter(topHeadlinesList), viewModel.rowPositionTracker)
+                            if(scrollToPos > 0 && expandDummy){
+                                news_rv.scrollToPosition(scrollToPos)
+                                expandDummy = false
+                                Log.i("subind", "scrolledTo: $scrollToPos")
+                            }
+                            /**
+                             * The below formula is used to determine the no: of pages to paginate,
+                             * here "QUERY_PAGE_SIZE" is the constant that we sent to the api to get the
+                             * number of topHeadline articles in each request, whereas "totalResults"
+                             * depicts the no: of art topHeadline articles available.
+                             */
+                            val totalPages = it.totalResults / QUERY_PAGE_SIZE + 2
+                            isLastPage = viewModel.newsArticlesPageNumber == totalPages
+                            if(isLastPage) {
+                                newsAdapter.isAnyRowExpanded = false
+                                Toast.makeText(this@NewsActivity, "Final page loaded", Toast.LENGTH_LONG).show()
+                            }
                         }
                     }
-                }
-                is Resource.Error -> {
-                    hideProgressBar()
-                    it.message?.let { message ->
-                        Toast.makeText(this, "An error occurred: $message", Toast.LENGTH_LONG).show()
-                        showErrorMessage(message)
+                    is NewsState.Error -> {
+                        hideProgressBar()
+                        it.error.let { message ->
+                            Toast.makeText(this@NewsActivity, "An error occurred: $message", Toast.LENGTH_LONG)
+                                .show()
+                            showErrorMessage(message)
+                        }
                     }
-                }
-                is Resource.Loading -> {
-                    showProgressBar()
+                    is NewsState.Loading -> {
+                        showProgressBar()
+                    }
                 }
             }
-        })
+        }
+    }
+
+    private fun initialise() {
+        lifecycleScope.launch {
+            viewModel.newsIntent.send(NewsIntent.FetchSources)
+        }
     }
 
     val scrollListener = object : RecyclerView.OnScrollListener() {
@@ -119,7 +122,9 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
             val isNotAtBeginning = firstVisibleItemPosition >= 0
             val shouldPaginate = isNoErrors && isNotLoadingAndNotLastPage && !isAtLastItem && isNotAtBeginning && isChildScrolling
             if(shouldPaginate) {
-                viewModel.getNewsArticles(viewModel.newsSourceIdTracker ?: "")
+                lifecycleScope.launch {
+                    viewModel.newsIntent.send(NewsIntent.FetchArticles(viewModel.newsSourceIdTracker ?: ""))
+                }
                 isChildScrolling = false
             }
         }
@@ -182,7 +187,9 @@ class NewsActivity : AppCompatActivity(), MyCallBackInterface {
         viewModel.newsArticlesPageNumber = 1
         viewModel.newsSourceIdTracker = sourceId
         viewModel.rowPositionTracker = rowPosition
-        viewModel.getNewsArticles(sourceId)
+        lifecycleScope.launch {
+            viewModel.newsIntent.send(NewsIntent.FetchArticles(sourceId))
+        }
     }
 
     override fun noOfItemsRemoved(number: Int, expandDummy: Boolean) {
